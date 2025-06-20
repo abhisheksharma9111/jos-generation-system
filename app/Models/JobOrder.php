@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class JobOrder extends Model
 {
     use HasFactory, SoftDeletes;
-    
-    
+
+
     protected $fillable = [
         'name',
         'date',
@@ -33,31 +33,46 @@ class JobOrder extends Model
 
     // Add this to cast dates properly
     protected $dates = ['date', 'jos_date'];
-    
+
+   
+
     protected static function boot()
     {
         parent::boot();
-        
-        static::creating(function ($model) {
-            $model->reference_number = 'JO-' . now()->format('Ymd') . '-' . str_pad(static::count() + 1, 3, '0', STR_PAD_LEFT);
+
+        static::creating(function ($jobOrder) {
+            
+            $date = $jobOrder->date->format('Ymd');
+
+            
+            $lastOrder = static::withTrashed()
+                ->where('reference_number', 'like', "JO-{$date}-%")
+                ->orderBy('reference_number', 'desc')
+                ->first();
+
+            $number = $lastOrder
+                ? (int) substr($lastOrder->reference_number, -3) + 1
+                : 1;
+
+            $jobOrder->reference_number = sprintf("JO-%s-%03d", $date, $number);
         });
     }
-    
+
     public function typeOfWork()
     {
         return $this->belongsTo(TypeOfWork::class);
     }
-    
+
     public function contractor()
     {
         return $this->belongsTo(Contractor::class);
     }
-    
+
     public function conductor()
     {
         return $this->belongsTo(Conductor::class);
     }
-    
+
     public function jobOrderStatement()
     {
         return $this->hasOneThrough(
@@ -69,7 +84,7 @@ class JobOrder extends Model
             'job_order_statement_id'
         );
     }
-    
+
     public function getAmountAttribute()
     {
         return $this->actual_work_completed * $this->typeOfWork->rate;

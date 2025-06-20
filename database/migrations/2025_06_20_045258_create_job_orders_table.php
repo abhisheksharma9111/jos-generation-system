@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->foreignId('conductor_id')->constrained();
             $table->decimal('actual_work_completed', 10, 2);
             $table->text('remarks')->nullable();
-            $table->string('reference_number')->unique();
+           $table->string('reference_number')->unique();
             $table->softDeletes();
             $table->timestamps();
         });
